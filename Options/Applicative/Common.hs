@@ -62,7 +62,8 @@ import Options.Applicative.Internal
 import Options.Applicative.Types
 
 showOption :: OptName -> String
-showOption (OptLong n) = "--" ++ n
+showOption (OptLongSingleDash n) = '-' : n
+showOption (OptLongDoubleDash n) = "--" ++ n
 showOption (OptShort n) = '-' : [n]
 
 optionNames :: OptReader a -> [OptName]
@@ -72,7 +73,10 @@ optionNames _ = []
 
 isOptionPrefix :: OptName -> OptName -> Bool
 isOptionPrefix (OptShort x) (OptShort y) = x == y
-isOptionPrefix (OptLong x) (OptLong y) = x `isPrefixOf` y
+isOptionPrefix (OptShort x) (OptLongSingleDash (y:_)) = x == y
+isOptionPrefix (OptLongSingleDash [x]) (OptShort y) = x == y
+isOptionPrefix (OptLongSingleDash x) (OptLongSingleDash y) = x `isPrefixOf` y
+isOptionPrefix (OptLongDoubleDash x) (OptLongDoubleDash y) = x `isPrefixOf` y
 isOptionPrefix _ _ = False
 
 -- | Create a parser composed of a single option.
@@ -124,7 +128,8 @@ optMatches disambiguate opt (OptWord arg1 val) = case opt of
     errorFor name msg = "option " ++ showOption name ++ ": " ++ msg
 
     is_short (OptShort _) = True
-    is_short (OptLong _)  = False
+    is_short (OptLongSingleDash _)  = False
+    is_short (OptLongDoubleDash _)  = False
 
     has_name a
       | disambiguate = any (isOptionPrefix a)
@@ -137,17 +142,23 @@ isArg _ = False
 data OptWord = OptWord OptName (Maybe String)
 
 parseWord :: String -> Maybe OptWord
-parseWord ('-' : '-' : w) = Just $ let
-  (opt, arg) = case span (/= '=') w of
-    (_, "") -> (w, Nothing)
-    (w', _ : rest) -> (w', Just rest)
-  in OptWord (OptLong opt) arg
-parseWord ('-' : w) = case w of
-  [] -> Nothing
-  (a : rest) -> Just $ let
-    arg = rest <$ guard (not (null rest))
-    in OptWord (OptShort a) arg
-parseWord _ = Nothing
+parseWord s = case s of
+  ('-' : '-' : w) -> Just $ let
+    (opt, arg) = longOpt w
+    in OptWord (OptLongDoubleDash opt) arg
+  ('-' : w) -> case w of
+    [] -> Nothing
+    (a : rest) -> Just $
+      if null rest then
+        OptWord (OptShort a) Nothing
+      else let
+        (opt, arg) = longOpt w
+        in OptWord (OptLongSingleDash opt) arg
+  _ -> Nothing
+  where
+    longOpt w = case span (/= '=') w of
+      (_, "") -> (w, Nothing)
+      (w', _ : rest) -> (w', Just rest)
 
 searchParser :: Monad m
              => (forall r . Option r -> NondetT m r)

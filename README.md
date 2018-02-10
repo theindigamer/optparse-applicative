@@ -91,7 +91,7 @@ sample = Sample
          <> short 'q'
          <> help "Whether to be quiet" )
       <*> option auto
-          ( long "enthusiasm"
+          ( longSingle "enthusiasm"
          <> help "How enthusiastically to greet"
          <> showDefault
          <> value 1
@@ -132,7 +132,7 @@ will display an appropriate error message and a short option summary:
 
     Missing: --hello TARGET
 
-    Usage: hello --hello TARGET [-q|--quiet] [--enthusiasm INT]
+    Usage: hello --hello TARGET [-q|--quiet] [-enthusiasm INT]
       Print a greeting for TARGET
 
 Running the program with the `--help` option will display the full help text
@@ -141,13 +141,13 @@ containing a detailed list of options with descriptions
 ```
     hello - a test for optparse-applicative
 
-    Usage: hello --hello TARGET [-q|--quiet] [--enthusiasm INT]
+    Usage: hello --hello TARGET [-q|--quiet] [-enthusiasm INT]
       Print a greeting for TARGET
 
     Available options:
       --hello TARGET           Target for the greeting
       -q,--quiet               Whether to be quiet
-      --enthusiasm INT         How enthusiastically to greet (default: 1)
+      -enthusiasm INT          How enthusiastically to greet (default: 1)
       -h,--help                Show this help text
 ```
 
@@ -377,7 +377,8 @@ result if the option is not found in the command line. An option
 without a default value is considered mandatory, and produces an
 error when not found.
 
-Regular options can have *long* names, or *short* (one-character)
+Regular options can have *long* names (with one or two dashes),
+or *short* (one-character, one dash)
 names, which determine when the option matches and how the argument
 is extracted.
 
@@ -385,19 +386,15 @@ An option with a long name (say "output") is specified on the command
 line as
 
 
-    --output filename.txt
+    --output filename.txt  -output filename.txt
 
 or
 
-    --output=filename.txt
+    --output=filename.txt  -output=filename.txt
 
 while a short name option (say "o") can be specified with
 
     -o filename.txt
-
-or
-
-    -ofilename.txt
 
 Options can have more than one name, usually one long and one short,
 although you are free to create options with an arbitrary combination

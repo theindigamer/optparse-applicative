@@ -31,6 +31,7 @@ module Options.Applicative.Builder (
   -- * Modifiers
   short,
   long,
+  longSingle,
   help,
   helpDoc,
   value,
@@ -154,9 +155,18 @@ disabled = readerError "disabled option"
 short :: HasName f => Char -> Mod f a
 short = fieldMod . name . OptShort
 
--- | Specify a long name for an option.
+-- | Specify a long name for an option (two dashes).
 long :: HasName f => String -> Mod f a
-long = fieldMod . name . OptLong
+long = fieldMod . name . OptLongDoubleDash
+
+-- | Specify a long name for an option (one dash). The string should have 2
+-- or more characters.
+longSingle :: HasName f => String -> Mod f a
+longSingle s
+  | l == 0 = error "The argument should be 2 or more chars long."
+  | l == 1 = error "Use short instead of longSingle."
+  | otherwise = fieldMod . name . OptLongSingleDash $ s
+  where l = length s
 
 -- | Specify a default value for an option.
 --
