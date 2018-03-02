@@ -111,7 +111,8 @@ data ParserPrefs = ParserPrefs
   } deriving (Eq, Show)
 
 data OptName = OptShort !Char
-             | OptLong !String
+             | OptLongSingleDash !String
+             | OptLongDoubleDash !String
   deriving (Eq, Ord, Show)
 
 -- | Visibility of an option in the help text.

@@ -87,6 +87,7 @@ module Options.Applicative (
 
   short,
   long,
+  longSingle,
   help,
   helpDoc,
   value,

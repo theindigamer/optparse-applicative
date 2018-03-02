@@ -100,5 +100,11 @@ test-suite optparse-applicative-tests
                      , optparse-applicative
                      , QuickCheck                      >= 2.8 && < 2.11
 
+  other-modules:       Examples.Alternatives
+                     , Examples.Cabal
+                     , Examples.Commands
+                     , Examples.Formatting
+                     , Examples.Hello
+
   if !impl(ghc >= 8)
     build-depends:     semigroups

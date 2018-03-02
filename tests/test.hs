@@ -163,7 +163,7 @@ prop_drops_back_contexts = once $
       p1 = subparser (command "c" (info p3 idm)  <> metavar "C")
       p0 = (,) <$> p2 <*> p1
       i = info (p0 <**> helper) idm
-  in checkHelpTextWith (ExitFailure 1) defaultPrefs "dropback" i ["b", "-aA"]
+  in checkHelpTextWith (ExitFailure 1) defaultPrefs "dropback" i ["b", "-a", "A"]
 
 prop_context_carry :: Property
 prop_context_carry = once $
@@ -173,7 +173,7 @@ prop_context_carry = once $
       p1 = subparser (command "c" (info p3 idm)  <> metavar "C")
       p0 = (,) <$> p2 <*> p1
       i = info (p0 <**> helper) idm
-  in checkHelpTextWith (ExitFailure 1) defaultPrefs "carry" i ["b", "-aA", "c"]
+  in checkHelpTextWith (ExitFailure 1) defaultPrefs "carry" i ["b", "-a", "A", "c"]
 
 prop_help_on_empty :: Property
 prop_help_on_empty = once $
@@ -193,7 +193,7 @@ prop_help_on_empty_sub = once $
       p1 = subparser (command "c" (info p3 idm)  <> metavar "C")
       p0 = (,) <$> p2 <*> p1
       i = info (p0 <**> helper) idm
-  in checkHelpTextWith (ExitFailure 1) (prefs showHelpOnEmpty) "helponemptysub" i ["b", "-aA", "c"]
+  in checkHelpTextWith (ExitFailure 1) (prefs showHelpOnEmpty) "helponemptysub" i ["b", "-a", "A", "c"]
 
 prop_many_args :: Property
 prop_many_args = forAll (choose (0,2000)) $ \nargs ->
@@ -220,6 +220,14 @@ prop_ambiguous = once $
       i = info p idm
       result = execParserPure (prefs disambiguate) i ["--ba"]
   in  assertError result (\_ -> property succeeded)
+
+prop_ambiguous2 :: Property
+prop_ambiguous2 = once $
+  let p =   flag' (1 :: Int) (short 'f')
+        <|> flag' 2 (longSingle "foo")
+      i = info p idm
+      result = execParserPure (prefs disambiguate) i ["-f"]
+  in assertError result (\_ -> property succeeded)
 
 prop_completion :: Property
 prop_completion = once . ioProperty $
@@ -414,6 +422,22 @@ condr f = do
   guard (f x)
   return x
 
+prop_single_dash_long_arg :: Property
+prop_single_dash_long_arg = once $
+  let p = strOption (longSingle "foo")
+      i = info p idm
+      result = run i ["-foo", "bar"]
+  in assertResult result (=== "bar")
+
+prop_single_dash_long_path_arg :: Property
+prop_single_dash_long_path_arg = once $
+  let p = (,)
+          <$> strOption (longSingle "foo")
+          <*> strOption (longSingle "blep")
+      i = info p idm
+      result = run i ["-blep", "/blah/boop.a", "-foo", "bar/baz/qux"]
+  in assertResult result (=== ("bar/baz/qux", "/blah/boop.a"))
+
 prop_arg_order_1 :: Property
 prop_arg_order_1 = once $
   let p = (,)
@@ -449,7 +473,7 @@ prop_unix_style j k =
           <$> flag' j (short 'x')
           <*> flag' k (short 'c')
       i = info p idm
-      result = run i ["-xc"]
+      result = run i ["-x", "-c"]
   in assertResult result ((===) (j,k))
 
 prop_unix_with_options :: Property
@@ -458,14 +482,14 @@ prop_unix_with_options = once $
           <$> flag' (1 :: Int) (short 'x')
           <*> strOption (short 'a')
       i = info p idm
-      result = run i ["-xac"]
+      result = run i ["-x", "-a", "c"]
   in assertResult result ((===) (1, "c"))
 
 prop_count_flags :: Property
 prop_count_flags = once $
   let p = length <$> many (flag' () (short 't'))
       i = info p idm
-      result = run i ["-ttt"]
+      result = run i ["-t", "-t", "-t"]
   in assertResult result ((===) 3)
 
 prop_issue_47 :: Property
@@ -621,6 +645,15 @@ prop_missing_option_parameter_err = once $
     let text = head . lines . fst $ renderFailure failure "test"
     in  "The option `-a` expects an argument." === text
 
+prop_missing_option_parameter_err2 :: Property
+prop_missing_option_parameter_err2 = once $
+  let p :: Parser String
+      p = option str (longSingle "foo")
+      i = info p idm
+  in assertError (run i ["-foo"]) $ \failure ->
+    let text = head . lines . fst $ renderFailure failure "test"
+    in  "The option `-foo` expects an argument." === text
+
 prop_many_pairs_success :: Property
 prop_many_pairs_success = once $
   let p :: Parser [(String, String)]
@@ -644,7 +677,7 @@ prop_many_pairs_lazy_progress = once $
   let p :: Parser [(Maybe String, String)]
       p = many $ (,) <$> optional (option str (short 'a')) <*> argument str idm
       i = info p idm
-      result = run i ["foo", "-abar", "baz"]
+      result = run i ["foo", "-a", "bar", "baz"]
   in assertResult result $ \xs -> [(Just "bar", "foo"), (Nothing, "baz")] === xs
 
 prop_suggest :: Property
